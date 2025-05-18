@@ -130,6 +130,25 @@ func updateApp(app App) error {
 	return cmd.Run()
 }
 
+func fetchAppCommits(app App) ([]string, error) {
+	fetchCmd := exec.Command("git", "-C", app.Destination, "fetch", "--all")
+	if err := fetchCmd.Run(); err != nil {
+		return nil, fmt.Errorf("command to fetch updates failed: %v", err)
+	}
+
+	logCmd := exec.Command("git", "-C", app.Destination, "log", "HEAD..origin", "--oneline")
+	out, err := logCmd.Output()
+	if err != nil {
+		return nil, fmt.Errorf("git log command failed: %v", err)
+	}
+
+	lines := strings.Split(string(out), "\n")
+	if lines[len(lines)-1] == "" {
+		lines = lines[:len(lines)-1]
+	}
+	return lines, nil
+}
+
 func main() {
 	flag.Parse()
 
@@ -215,6 +234,39 @@ func main() {
 		}
 
 		runBuildInstructions(dest, app.Build)
+		break
+
+	case "check":
+		name := flag.Arg(1)
+		if name == "" {
+			log.Fatal("name is required")
+		}
+
+		app, err := findAppByName(conf, name)
+		if err != nil {
+			log.Fatalf("coulnd't find app with this name: %v", err)
+		}
+
+		dest := getAppDestination(app, confDir)
+
+		if !isGitRepoExist(dest) {
+			log.Fatal("repo doesn't exist, install first")
+		}
+
+		newCommits, err := fetchAppCommits(app)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		if len(newCommits) > 0 {
+			fmt.Printf("%s has new commits\n", app.Name)
+			for _, commit := range newCommits {
+				fmt.Print(commit)
+			}
+		} else {
+			fmt.Printf("%s has no new commits\n", app.Name)
+		}
+
 		break
 	}
 }

@@ -33,3 +33,9 @@ dl install neovim
 ```bash
 dl update neovim
 ```
+
+### Check for new commits
+
+```bash
+dl check neovim
+```
