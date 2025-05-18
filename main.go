@@ -124,6 +124,12 @@ func getAppDestination(app App, configPath string) string {
 	return path.Join(configPath, app.Name)
 }
 
+func updateApp(app App) error {
+	cmd := exec.Command("git", "pull")
+	cmd.Dir = app.Destination
+	return cmd.Run()
+}
+
 func main() {
 	flag.Parse()
 
@@ -202,6 +208,10 @@ func main() {
 		repoExists := isGitRepoExist(dest)
 		if !repoExists {
 			log.Fatal("repo doesn't exist, install first")
+		}
+
+		if err := updateApp(app); err != nil {
+			log.Fatalf("couldn't pull changes: %v", err)
 		}
 
 		runBuildInstructions(dest, app.Build)
