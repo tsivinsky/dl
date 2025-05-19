@@ -261,7 +261,7 @@ func main() {
 		if len(newCommits) > 0 {
 			fmt.Printf("%s has new commits\n", app.Name)
 			for _, commit := range newCommits {
-				fmt.Print(commit)
+				fmt.Println(commit)
 			}
 		} else {
 			fmt.Printf("%s has no new commits\n", app.Name)
