@@ -184,12 +184,7 @@ func main() {
 		break
 
 	case "install":
-		name := flag.Arg(1)
-		if name == "" {
-			log.Fatal("name is required")
-		}
-
-		app, err := findAppByName(conf, name)
+		app, err := findAppByName(conf, flag.Arg(1))
 		if err != nil {
 			log.Fatalf("coulnd't find app with this name: %v", err)
 		}
@@ -212,12 +207,7 @@ func main() {
 		break
 
 	case "update":
-		name := flag.Arg(1)
-		if name == "" {
-			log.Fatal("name is required")
-		}
-
-		app, err := findAppByName(conf, name)
+		app, err := findAppByName(conf, flag.Arg(1))
 		if err != nil {
 			log.Fatalf("coulnd't find app with this name: %v", err)
 		}
@@ -237,12 +227,7 @@ func main() {
 		break
 
 	case "check":
-		name := flag.Arg(1)
-		if name == "" {
-			log.Fatal("name is required")
-		}
-
-		app, err := findAppByName(conf, name)
+		app, err := findAppByName(conf, flag.Arg(1))
 		if err != nil {
 			log.Fatalf("coulnd't find app with this name: %v", err)
 		}
