@@ -10,6 +10,7 @@ import (
 	"path"
 	"strings"
 
+	"github.com/tsivinsky/dl/commander"
 	"gopkg.in/yaml.v3"
 )
 
@@ -152,9 +153,42 @@ func fetchAppCommits(app App) ([]string, error) {
 	return lines, nil
 }
 
-func main() {
-	flag.Parse()
+func editCommand() error {
+	_, confFile, err := setupConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
 
+	editor := os.Getenv("EDITOR")
+	if editor == "" {
+		editor = "vim"
+	}
+
+	cmd := exec.Command(editor, confFile)
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = os.Stdout
+	return cmd.Run()
+}
+
+func listCommand() error {
+	_, confFile, err := setupConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	conf, err := parseConfig(confFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	for _, item := range conf.DL {
+		fmt.Printf("%s\n", item.Name)
+	}
+
+	return nil
+}
+
+func installCommand() error {
 	confDir, confFile, err := setupConfig()
 	if err != nil {
 		log.Fatal(err)
@@ -165,96 +199,111 @@ func main() {
 		log.Fatal(err)
 	}
 
-	switch flag.Arg(0) {
-	case "edit":
-		editor := os.Getenv("EDITOR")
-		if editor == "" {
-			editor = "vim"
-		}
+	app, err := findAppByName(conf, flag.Arg(1))
+	if err != nil {
+		return fmt.Errorf("coulnd't find app with this name: %v", err)
+	}
 
-		cmd := exec.Command(editor, confFile)
-		cmd.Stdin = os.Stdin
-		cmd.Stdout = os.Stdout
-		if err := cmd.Run(); err != nil {
-			log.Fatal(err)
-		}
-		break
+	dest := getAppDestination(app, confDir)
 
-	case "list", "ls":
-		for _, item := range conf.DL {
-			fmt.Printf("%s\n", item.Name)
-		}
-		break
+	repoExists := isGitRepoExist(dest)
+	if repoExists {
+		fmt.Printf("%s already exists, skipping cloning\n", dest)
+	}
 
-	case "install":
-		app, err := findAppByName(conf, flag.Arg(1))
+	if !repoExists {
+		err = cloneGitRepo(app.URL, dest)
 		if err != nil {
-			log.Fatalf("coulnd't find app with this name: %v", err)
+			return fmt.Errorf("couldn't clone git repo: %v", err)
 		}
+	}
 
-		dest := getAppDestination(app, confDir)
+	return runInstructions(dest, app.Build)
+}
 
-		repoExists := isGitRepoExist(dest)
-		if repoExists {
-			fmt.Printf("%s already exists, skipping cloning\n", dest)
+func updateCommand() error {
+	confDir, confFile, err := setupConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	conf, err := parseConfig(confFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	app, err := findAppByName(conf, flag.Arg(1))
+	if err != nil {
+		return fmt.Errorf("coulnd't find app with this name: %v", err)
+	}
+
+	dest := getAppDestination(app, confDir)
+
+	repoExists := isGitRepoExist(dest)
+	if !repoExists {
+		return fmt.Errorf("repo doesn't exist, install first")
+	}
+
+	if err := updateApp(app); err != nil {
+		return fmt.Errorf("couldn't pull changes: %v", err)
+	}
+
+	return runInstructions(dest, app.Build)
+}
+
+func checkCommand() error {
+	confDir, confFile, err := setupConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	conf, err := parseConfig(confFile)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	app, err := findAppByName(conf, flag.Arg(1))
+	if err != nil {
+		return fmt.Errorf("coulnd't find app with this name: %v", err)
+	}
+
+	dest := getAppDestination(app, confDir)
+
+	if !isGitRepoExist(dest) {
+		return fmt.Errorf("repo doesn't exist, install first")
+	}
+
+	newCommits, err := fetchAppCommits(app)
+	if err != nil {
+		return fmt.Errorf("couldn't fetch new commits: %v", err)
+	}
+
+	if len(newCommits) > 0 {
+		fmt.Printf("%s has new commits\n", app.Name)
+		for _, commit := range newCommits {
+			fmt.Println(commit)
 		}
+	} else {
+		fmt.Printf("%s has no new commits\n", app.Name)
+	}
 
-		if !repoExists {
-			err = cloneGitRepo(app.URL, dest)
-			if err != nil {
-				log.Fatalf("couldn't clone git repo: %v\n", err)
-			}
-		}
+	return nil
+}
 
-		runInstructions(dest, app.Build)
-		break
+func main() {
+	cmder := commander.New()
 
-	case "update":
-		app, err := findAppByName(conf, flag.Arg(1))
-		if err != nil {
-			log.Fatalf("coulnd't find app with this name: %v", err)
-		}
+	cmder.RegisterCommand("edit", "edit dl config", editCommand)
+	cmder.RegisterCommand("list", "list all apps", listCommand)
+	cmder.AddAliases("list", "ls")
+	cmder.RegisterCommand("install", "install app defined in config", installCommand)
+	cmder.RegisterCommand("update", "update app defined in config", updateCommand)
+	cmder.RegisterCommand("check", "fetch new commits and print them", checkCommand)
 
-		dest := getAppDestination(app, confDir)
+	flag.Usage = cmder.Usage
+	flag.Parse()
 
-		repoExists := isGitRepoExist(dest)
-		if !repoExists {
-			log.Fatal("repo doesn't exist, install first")
-		}
-
-		if err := updateApp(app); err != nil {
-			log.Fatalf("couldn't pull changes: %v", err)
-		}
-
-		runInstructions(dest, app.Build)
-		break
-
-	case "check":
-		app, err := findAppByName(conf, flag.Arg(1))
-		if err != nil {
-			log.Fatalf("coulnd't find app with this name: %v", err)
-		}
-
-		dest := getAppDestination(app, confDir)
-
-		if !isGitRepoExist(dest) {
-			log.Fatal("repo doesn't exist, install first")
-		}
-
-		newCommits, err := fetchAppCommits(app)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		if len(newCommits) > 0 {
-			fmt.Printf("%s has new commits\n", app.Name)
-			for _, commit := range newCommits {
-				fmt.Println(commit)
-			}
-		} else {
-			fmt.Printf("%s has no new commits\n", app.Name)
-		}
-
-		break
+	if err := cmder.RunCommand(flag.Arg(0)); err != nil {
+		fmt.Printf("%v\n", err)
 	}
 }
