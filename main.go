@@ -102,7 +102,7 @@ func cloneGitRepo(repoUrl string, dest string) error {
 	return cmd.Run()
 }
 
-func runBuildInstructions(path string, instructions []string) error {
+func runInstructions(path string, instructions []string) error {
 	for _, instruction := range instructions {
 		parts := strings.Split(instruction, " ")
 		cmd := exec.Command(parts[0], parts[1:]...)
@@ -206,7 +206,7 @@ func main() {
 			}
 		}
 
-		runBuildInstructions(dest, app.Build)
+		runInstructions(dest, app.Build)
 		break
 
 	case "update":
@@ -226,7 +226,7 @@ func main() {
 			log.Fatalf("couldn't pull changes: %v", err)
 		}
 
-		runBuildInstructions(dest, app.Build)
+		runInstructions(dest, app.Build)
 		break
 
 	case "check":
