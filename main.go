@@ -80,7 +80,8 @@ func isGitRepoExist(repoPath string) bool {
 		return false
 	}
 
-	cmd := exec.Command("git", "-C", repoPath, "status")
+	cmd := exec.Command("git", "status")
+	cmd.Dir = repoPath
 	if err := cmd.Run(); err != nil {
 		if e, ok := err.(*exec.ExitError); ok {
 			if e.ProcessState.ExitCode() == 128 {
@@ -131,12 +132,14 @@ func updateApp(app App) error {
 }
 
 func fetchAppCommits(app App) ([]string, error) {
-	fetchCmd := exec.Command("git", "-C", app.Destination, "fetch", "--all")
+	fetchCmd := exec.Command("git", "fetch", "--all")
+	fetchCmd.Dir = app.Destination
 	if err := fetchCmd.Run(); err != nil {
 		return nil, fmt.Errorf("command to fetch updates failed: %v", err)
 	}
 
-	logCmd := exec.Command("git", "-C", app.Destination, "log", "HEAD..origin", "--oneline")
+	logCmd := exec.Command("git", "log", "HEAD..origin", "--oneline")
+	logCmd.Dir = app.Destination
 	out, err := logCmd.Output()
 	if err != nil {
 		return nil, fmt.Errorf("git log command failed: %v", err)
