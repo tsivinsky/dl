@@ -80,5 +80,6 @@ func main() {
 
 	if err := cmder.RunCommand(flag.Arg(0)); err != nil {
 		fmt.Printf("%v\n", err)
+		os.Exit(1)
 	}
 }
