@@ -45,7 +45,7 @@ func checkCommand() error {
 		return fmt.Errorf("coulnd't find app with this name: %v", err)
 	}
 
-	dest := getAppDestination(app, confDir)
+	dest := getAppDestination(app, conf, confDir)
 
 	if !isGitRepoExist(dest) {
 		return fmt.Errorf("repo doesn't exist, install first")

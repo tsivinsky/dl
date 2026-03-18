@@ -57,9 +57,13 @@ func runInstructions(path string, instructions []string) error {
 	return nil
 }
 
-func getAppDestination(app App, configPath string) string {
+func getAppDestination(app App, conf Conf, configPath string) string {
 	if app.Destination != "" {
 		return app.Destination
+	}
+
+	if conf.RootDir != "" {
+		return path.Join(conf.RootDir, app.Name)
 	}
 
 	return path.Join(configPath, app.Name)

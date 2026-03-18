@@ -15,7 +15,8 @@ type App struct {
 }
 
 type Conf struct {
-	DL []App `yaml:"dl"`
+	RootDir string `yaml:"root_dir"`
+	DL      []App  `yaml:"dl"`
 }
 
 func setupConfig() (string, string, error) {

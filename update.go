@@ -29,7 +29,7 @@ func updateCommand() error {
 		return fmt.Errorf("coulnd't find app with this name: %v", err)
 	}
 
-	dest := getAppDestination(app, confDir)
+	dest := getAppDestination(app, conf, confDir)
 
 	repoExists := isGitRepoExist(dest)
 	if !repoExists {
