@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -12,6 +13,21 @@ import (
 var installCommand = &cobra.Command{
 	Use:   "install",
 	Short: "installs app defined in config",
+	ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		var apps []App
+		if err := viper.UnmarshalKey("dl", &apps); err != nil {
+			return nil, cobra.ShellCompDirectiveError
+		}
+
+		options := []string{}
+		for _, app := range apps {
+			if strings.HasPrefix(app.Name, toComplete) {
+				options = append(options, app.Name)
+			}
+		}
+
+		return options, cobra.ShellCompDirectiveDefault
+	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		var config Config
 		if err := viper.Unmarshal(&config); err != nil {
