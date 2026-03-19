@@ -27,17 +27,17 @@ var installCommand = &cobra.Command{
 			return fmt.Errorf("app not found")
 		}
 
-		dest := getAppDestination(app, config, configDir)
+		app.Destination = getAppDestination(app, config, configDir)
 
-		if isGitRepoExist(dest) {
+		if isGitRepoExist(app.Destination) {
 			fmt.Println("Repository already exists, skipping cloning")
 		} else {
-			if err := cloneGitRepo(app.URL, dest); err != nil {
+			if err := cloneGitRepo(app.URL, app.Destination); err != nil {
 				return fmt.Errorf("failed to clone git repository: %v", err)
 			}
 		}
 
-		return runAppInstructions(dest, app.Build)
+		return runAppInstructions(app.Destination, app.Build)
 	},
 }
 

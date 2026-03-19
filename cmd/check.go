@@ -27,9 +27,9 @@ var checkCommand = &cobra.Command{
 			return fmt.Errorf("app not found")
 		}
 
-		dest := getAppDestination(app, config, configDir)
+		app.Destination = getAppDestination(app, config, configDir)
 
-		if !isGitRepoExist(dest) {
+		if !isGitRepoExist(app.Destination) {
 			return fmt.Errorf("repo doesn't exist, install first")
 		}
 

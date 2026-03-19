@@ -26,9 +26,9 @@ var updateCommand = &cobra.Command{
 			return fmt.Errorf("app not found")
 		}
 
-		dest := getAppDestination(app, config, configDir)
+		app.Destination = getAppDestination(app, config, configDir)
 
-		if !isGitRepoExist(dest) {
+		if !isGitRepoExist(app.Destination) {
 			return fmt.Errorf("repo doesn't exist, install first")
 		}
 
@@ -36,7 +36,7 @@ var updateCommand = &cobra.Command{
 			return fmt.Errorf("failed to pull changed: %v", err)
 		}
 
-		return runAppInstructions(dest, app.Build)
+		return runAppInstructions(app.Destination, app.Build)
 	},
 }
 
