@@ -24,6 +24,7 @@ var listCommand = &cobra.Command{
 		tw := tabwriter.NewWriter(os.Stdout, 0, 2, 4, ' ', 0)
 		defer tw.Flush()
 		for _, item := range config.DL {
+			item.Destination = getAppDestination(item, config, configDir)
 			info, err := getRepoInfo(item.Destination)
 			if err != nil {
 				fmt.Fprintf(tw, "%s\t\tfailed to retrieve latest commit\t[%v]\n", item.Name, err)
